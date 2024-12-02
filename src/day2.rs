@@ -10,28 +10,25 @@ fn parse_file() -> Result<(), io::Error> {
     let reader = BufReader::new(file);
     let mut first_part: i64 = 0;
     let mut second_part: i64 = 0;
-    let lines: Vec<String> = reader.lines().collect::<Result<_, _>>()?;
-    for line in &lines {
+    for line in reader.lines() {
         let line_res = line;
-        let parts: Vec<i64> = line_res
+        let parts: Vec<i64> = line_res?
             .split_whitespace()
             .map(|s| s.parse::<i64>())
             .flatten()
             .collect();
         if is_good_way(&parts) {
             first_part += 1;
+            second_part += 1;
+            continue;
         }
-        for i in 0..parts.len() {
-            if is_good_way(&parts) {
-                second_part += 1;
-                break;
-            }
-            let mut new_vec = parts.clone();
-            new_vec.remove(i);
-            if is_good_way(&new_vec) {
-                second_part += 1;
-                break;
-            }
+
+        if (0..parts.len()).any(|i| {
+            let mut temp = parts.clone();
+            temp.remove(i);
+            is_good_way(&temp)
+        }) {
+            second_part += 1;
         }
     }
     println!("Day 2, step 1 - {}", first_part);
@@ -40,9 +37,11 @@ fn parse_file() -> Result<(), io::Error> {
 }
 
 fn is_good_way(vec: &[i64]) -> bool {
-    if is_vector_sorted(&vec) {
-        let diff_vec: Vec<i64> = vec.windows(2).map(|slice| slice[1] - slice[0]).collect();
-        return diff_vec.iter().all(|v| v.abs() <= 3 && v.abs() >= 1);
+    if is_vector_sorted(vec) {
+        return vec
+            .windows(2)
+            .map(|slice| slice[1] - slice[0])
+            .all(|v| (1..=3).contains(&v.abs()));
     }
     false
 }
